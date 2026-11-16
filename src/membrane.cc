@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include "bessel.h"
+
 namespace pajupilli {
 
 namespace {
@@ -26,13 +28,13 @@ Membrane::Membrane(double fs, const HeadSpec& spec) : spec_(spec), fs_(fs), dt_(
   for (int m = 0;; ++m) {
     // The zeros of J_m up to jmax (the first lies above m).
     std::vector<double> zeros;
-    double x0 = std::max(m + 0.5, 0.5), y0 = std::cyl_bessel_j(double(m), x0);
+    double x0 = std::max(m + 0.5, 0.5), y0 = besselJ(m, x0);
     for (double x = x0 + 0.05; x < jmax + 0.05; x += 0.05) {
-      const double y = std::cyl_bessel_j(double(m), x);
+      const double y = besselJ(m, x);
       if ((y0 < 0) != (y < 0)) {
         double a = x - 0.05, b = x, ya = y0;
         for (int it = 0; it < 50; ++it) {
-          const double mid = 0.5 * (a + b), ym = std::cyl_bessel_j(double(m), mid);
+          const double mid = 0.5 * (a + b), ym = besselJ(m, mid);
           if ((ya < 0) != (ym < 0)) b = mid; else { a = mid; ya = ym; }
         }
         if (0.5 * (a + b) <= jmax) zeros.push_back(0.5 * (a + b));
@@ -48,18 +50,18 @@ Membrane::Membrane(double fs, const HeadSpec& spec) : spec_(spec), fs_(fs), dt_(
       const double j = zeros[zi];
       const int nc = int(zi) + 1;
       const double f0 = j * c / (2 * kPi * R);
-      const double j1 = std::cyl_bessel_j(double(m + 1), j);
+      const double j1 = besselJ(m + 1, j);
       double mass = spec.sigma * kPi * R * R * j1 * j1 * (m == 0 ? 1.0 : 0.5);
       double vol = 0, f = f0;
       if (m == 0) {
-        vol = 2 * kPi * R * R * std::cyl_bessel_j(1.0, j) / j;  // the shape's integral over the head
+        vol = 2 * kPi * R * R * besselJ(1, j) / j;  // the shape's integral over the head
         const double share = vol / (kPi * R * R);
         const double air = spec.airMass * (8.0 / 3) * kRho * R * R * R * share * share;
         f = f0 * std::sqrt(mass / (mass + air));
         mass += air;
       }
       tab_.resize(size_t(fam + 1) * (kRadii + 1));
-      for (int i = 0; i <= kRadii; ++i) tab_[size_t(fam) * (kRadii + 1) + i] = float(std::cyl_bessel_j(double(m), j * i / kRadii));
+      for (int i = 0; i <= kRadii; ++i) tab_[size_t(fam) * (kRadii + 1) + i] = float(besselJ(m, j * i / kRadii));
       const double nrm = 1 / std::sqrt(mass);
       if (m == 0) {
         modes.push_back({f, 0, fam, 0, nrm, vol * nrm, 1, 0, nc, 1});

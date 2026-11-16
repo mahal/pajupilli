@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include "bessel.h"
+
 namespace pajupilli {
 
 namespace {
@@ -12,18 +14,18 @@ double urand(uint32_t& s) {
   return (s >> 8) * (1.0 / 16777216.0);
 }
 double jd(int m, double x) {  // J_m'
-  return m == 0 ? -std::cyl_bessel_j(1.0, x) : std::cyl_bessel_j(double(m - 1), x) - m / x * std::cyl_bessel_j(double(m), x);
+  return m == 0 ? -besselJ(1, x) : besselJ(m - 1, x) - m / x * besselJ(m, x);
 }
 double idr(int m, double x) {  // I_m' / I_m
-  return m == 0 ? std::cyl_bessel_i(1.0, x) / std::cyl_bessel_i(0.0, x)
-                : std::cyl_bessel_i(double(m - 1), x) / std::cyl_bessel_i(double(m), x) - m / x;
+  return m == 0 ? besselI(1, x) / besselI(0, x)
+                : besselI(m - 1, x) / besselI(m, x) - m / x;
 }
 // The free edge: no bending moment and no shear there. For the shape
 // J_m(l r / R) + C I_m(l r / R): the two conditions' terms (the I ones per
 // unit I_m(l)), and their determinant, zero at a mode.
 struct Edge { double aJ, aI, bJ, bI; };
 Edge edge(int m, double l, double nu) {
-  const double J = std::cyl_bessel_j(double(m), l), Jp = jd(m, l), Ir = idr(m, l), m2 = double(m) * m;
+  const double J = besselJ(m, l), Jp = jd(m, l), Ir = idr(m, l), m2 = double(m) * m;
   Edge e;
   e.aJ = -(l * l * J + (1 - nu) * (l * Jp - m2 * J));
   e.aI = l * l - (1 - nu) * (l * Ir - m2);
@@ -71,13 +73,13 @@ Plate::Plate(double fs, const PlateSpec& spec) : spec_(spec), fs_(fs), dt_(1 / f
       const double l = roots[i];
       const int nc = int(i) + (m < 2 ? 1 : 0);  // nodal circles
       const Edge e = edge(m, l, spec.nu);
-      const double C = -e.aJ / e.aI, Il = std::cyl_bessel_i(double(m), l);
+      const double C = -e.aJ / e.aI, Il = besselI(m, l);
       tab_.resize(size_t(fam + 1) * (kRadii + 1));
       float* t = &tab_[size_t(fam) * (kRadii + 1)];
       double sum = 0, curv = 0;
       for (int j = 0; j <= kRadii; ++j) {
         const double x = l * j / kRadii;
-        const double w = std::cyl_bessel_j(double(m), x) + C * std::cyl_bessel_i(double(m), x) / Il;
+        const double w = besselJ(m, x) + C * besselI(m, x) / Il;
         t[j] = float(w);
         const double r = R * j / kRadii;
         const double e = w * w * r * (R / kRadii) * (j == 0 || j == kRadii ? 0.5 : 1.0);
