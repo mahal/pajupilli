@@ -108,6 +108,9 @@ class Ensemble {
     for (Slot& s : f_) s.v->player().setHold(h);
     for (Section& k : kids_) k.ens->setHold(h);
   }
+  // Adaptive just intonation on or off while playing (PJ_JI sets it at the
+  // start); off: every flute back to equal temperament.
+  void setJustIntonation(bool on);
   void render(float* left, float* right, int n);  // 48 kHz, mixed, stereo
   void render(float* out, int n);                 // ... mono
   int resets() const;
