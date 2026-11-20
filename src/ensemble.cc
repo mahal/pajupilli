@@ -488,6 +488,18 @@ void Ensemble::split() {
   }
 }
 
+void Ensemble::setJustIntonation(bool on) {
+  if (on == ji_) return;
+  ji_ = on;
+  tuneSig_ = -1;
+  if (!on)
+    for (Slot& s : f_) {
+      s.cents = 0;
+      s.tunedNote = -1;
+      s.v->player().setTuning(0);
+    }
+}
+
 void Ensemble::retune() {
   int idx[64], note[64], n = 0;
   long long sig = 0;
