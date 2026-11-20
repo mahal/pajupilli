@@ -5,6 +5,7 @@
 #include <complex>
 #include <cstring>
 
+#include "bessel.h"
 #include "knob.h"
 
 namespace pajupilli {
@@ -59,7 +60,7 @@ void SciFiModel::keyOn(int midi, int velocity) {
   n.z = z0;
   n.zDecay = std::exp(-1 / (tauZ * fs));
   n.bias = 0.15 + 0.35 * urand();
-  n.dc = std::sin(n.bias) * std::cyl_bessel_j(0.0, std::min(z0, 20.0));
+  n.dc = std::sin(n.bias) * besselJ(0, std::min(z0, 20.0));
   n.foldAmp = 0.35 + 0.65 * v;
   n.relDecay = std::exp(-1 / (0.15 * fs));
   n.phi = 0;  // (sine phase from zero: the shot starts at once, no click)
@@ -112,7 +113,7 @@ float SciFiModel::sample() {
       const double fi = n.f0 * bk * std::exp2(n.drop * n.pitchEnv);
       // (the folder's spectrum: J_m(z) at m fi, negligible from m ~ z + 3: held under 20 kHz)
       const double z = std::min(n.z, std::max(0.0, 20000 / fi - 3));
-      if ((n.age & 31) == 0) n.dc = std::sin(n.bias) * std::cyl_bessel_j(0.0, z);
+      if ((n.age & 31) == 0) n.dc = std::sin(n.bias) * besselJ(0, z);
       fold = amp * (std::sin(z * std::sin(kTwoPi * n.phi) + n.bias) - n.dc);
       n.phi += fi * ifs;
       n.phi -= std::floor(n.phi);
